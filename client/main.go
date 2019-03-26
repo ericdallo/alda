@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hypebeast/go-osc/osc"
+	"github.com/musica/go-osc"
 	"math/rand"
 	"os"
 	"strconv"
@@ -11,75 +11,93 @@ import (
 
 var port int
 
+func bundle(time time.Time) *osc.Bundle {
+	return osc.NewBundle().SetTimeTag(time)
+}
+
+func message(address string) *osc.Message {
+	msg := osc.NewMessage()
+	msg.SetAddress(address)
+	return msg
+}
+
+func intArg(n int) *osc.Argument {
+	return osc.NewArgument().SetInt32(int32(n))
+}
+
+func stringArg(s string) *osc.Argument {
+	return osc.NewArgument().SetString(s)
+}
+
 func systemPlayMsg() *osc.Message {
-	return osc.NewMessage("/system/play")
+	return message("/system/play")
 }
 
 func systemStopMsg() *osc.Message {
-	return osc.NewMessage("/system/stop")
+	return message("/system/stop")
 }
 
 func midiPatchMsg(track int, offset int, patch int) *osc.Message {
-	msg := osc.NewMessage(fmt.Sprintf("/track/%d/midi/patch", track))
-	msg.Append(int32(offset))
-	msg.Append(int32(patch))
-	return msg
+	return message(
+		fmt.Sprintf("/track/%d/midi/patch", track),
+	).AddArguments(
+		intArg(offset), intArg(patch),
+	)
 }
 
 func midiPercussionMsg(track int) *osc.Message {
-	msg := osc.NewMessage(fmt.Sprintf("/track/%d/midi/percussion", track))
-	msg.Append(int32(0))
-	return msg
+	return message(fmt.Sprintf("/track/%d/midi/percussion", track)).AddArguments(
+		intArg(0),
+	)
 }
 
 func midiNoteMsg(
 	track int, offset int, note int, duration int, audibleDuration int,
 	velocity int) *osc.Message {
-	msg := osc.NewMessage(fmt.Sprintf("/track/%d/midi/note", track))
-	msg.Append(int32(offset))
-	msg.Append(int32(note))
-	msg.Append(int32(duration))
-	msg.Append(int32(audibleDuration))
-	msg.Append(int32(velocity))
-	return msg
+	return message(
+		fmt.Sprintf("/track/%d/midi/note", track),
+	).AddArguments(
+		intArg(offset),
+		intArg(note),
+		intArg(duration),
+		intArg(audibleDuration),
+		intArg(velocity))
 }
 
 func patternMsg(track int, offset int, pattern string, times int) *osc.Message {
-	msg := osc.NewMessage(fmt.Sprintf("/track/%d/pattern", track))
-	msg.Append(int32(offset))
-	msg.Append(pattern)
-	msg.Append(int32(times))
-	return msg
+	return message(fmt.Sprintf("/track/%d/pattern", track)).AddArguments(
+		intArg(offset),
+		stringArg(pattern),
+		intArg(times),
+	)
 }
 
 func patternMidiNoteMsg(
 	pattern string, offset int, note int, duration int, audibleDuration int,
 	velocity int) *osc.Message {
-	msg := osc.NewMessage(fmt.Sprintf("/pattern/%s/midi/note", pattern))
-	msg.Append(int32(offset))
-	msg.Append(int32(note))
-	msg.Append(int32(duration))
-	msg.Append(int32(audibleDuration))
-	msg.Append(int32(velocity))
-	return msg
+	return message(fmt.Sprintf("/pattern/%s/midi/note", pattern)).AddArguments(
+		intArg(offset),
+		intArg(note),
+		intArg(duration),
+		intArg(audibleDuration),
+		intArg(velocity),
+	)
 }
 
 func patternClearMsg(pattern string) *osc.Message {
-	return osc.NewMessage(fmt.Sprintf("/pattern/%s/clear", pattern))
+	return message(fmt.Sprintf("/pattern/%s/clear", pattern))
 }
 
 func oneNote() *osc.Bundle {
-	bundle := osc.NewBundle(time.Now())
-	bundle.Append(midiPatchMsg(1, 0, 30))
-	bundle.Append(midiNoteMsg(1, 0, 45, 1000, 1000, 127))
-	bundle.Append(systemPlayMsg())
-	return bundle
+	return bundle(time.Now()).AddElements(
+		midiPatchMsg(1, 0, 30),
+		midiNoteMsg(1, 0, 45, 1000, 1000, 127),
+		systemPlayMsg(),
+	)
 }
 
 func sixteenFastNotes() *osc.Bundle {
-	bundle := osc.NewBundle(time.Now())
-
-	bundle.Append(midiPatchMsg(1, 0, 70))
+	bundle := bundle(time.Now()).AddElements(midiPatchMsg(1, 0, 70))
 
 	interval := 100
 	audibleDuration := 80
@@ -87,28 +105,28 @@ func sixteenFastNotes() *osc.Bundle {
 	noteNumber := 30 + rand.Intn(60)
 
 	for offset := 0; offset <= interval*16; offset += interval {
-		bundle.Append(
+		bundle.AddElements(
 			midiNoteMsg(1, offset, noteNumber, interval, audibleDuration, 127))
 	}
 
-	bundle.Append(systemPlayMsg())
+	bundle.AddElements(systemPlayMsg())
 
 	return bundle
 }
 
 func playPattern(times int) *osc.Bundle {
 	pattern := "simple"
-	bundle := osc.NewBundle(time.Now())
-	bundle.Append(patternClearMsg(pattern))
-	bundle.Append(patternMidiNoteMsg(pattern, 0, 57, 500, 500, 127))
-	bundle.Append(patternMidiNoteMsg(pattern, 500, 60, 500, 500, 127))
-	bundle.Append(patternMidiNoteMsg(pattern, 1000, 62, 500, 500, 127))
-	bundle.Append(patternMidiNoteMsg(pattern, 1500, 64, 500, 500, 127))
-	bundle.Append(patternMidiNoteMsg(pattern, 2000, 67, 500, 500, 127))
-	bundle.Append(midiPatchMsg(1, 0, 60))
-	bundle.Append(patternMsg(1, 0, pattern, times))
-	bundle.Append(systemPlayMsg())
-	return bundle
+	return bundle(time.Now()).AddElements(
+		patternClearMsg(pattern),
+		patternMidiNoteMsg(pattern, 0, 57, 500, 500, 127),
+		patternMidiNoteMsg(pattern, 500, 60, 500, 500, 127),
+		patternMidiNoteMsg(pattern, 1000, 62, 500, 500, 127),
+		patternMidiNoteMsg(pattern, 1500, 64, 500, 500, 127),
+		patternMidiNoteMsg(pattern, 2000, 67, 500, 500, 127),
+		midiPatchMsg(1, 0, 60),
+		patternMsg(1, 0, pattern, times),
+		systemPlayMsg(),
+	)
 }
 
 func playPatternOnce() *osc.Bundle {
@@ -121,8 +139,7 @@ func playPatternTwice() *osc.Bundle {
 
 func changePattern() *osc.Bundle {
 	pattern := "simple"
-	bundle := osc.NewBundle(time.Now())
-	bundle.Append(patternClearMsg(pattern))
+	bundle := bundle(time.Now()).AddElements(patternClearMsg(pattern))
 
 	interval := 500
 	audibleDuration := 250
@@ -130,7 +147,7 @@ func changePattern() *osc.Bundle {
 	for offset := 0; offset <= interval*3; offset += interval {
 		noteNumber := 30 + rand.Intn(60)
 
-		bundle.Append(
+		bundle.AddElements(
 			patternMidiNoteMsg(
 				pattern, offset, noteNumber, interval, audibleDuration, 127))
 	}
@@ -166,7 +183,8 @@ func main() {
 		example = os.Args[2]
 	}
 
-	client := osc.NewClient("localhost", int(port))
+	client := osc.NewClient()
+	client.Connect("udp", fmt.Sprintf("localhost:%d", port))
 
 	switch example {
 	case "play":

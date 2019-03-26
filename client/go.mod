@@ -1,3 +1,3 @@
 module alda.io/client
 
-require github.com/hypebeast/go-osc v0.0.0-20181130121958-adefe22206c1
+require github.com/musica/go-osc v0.0.0-20190325175639-84dfd8181a5c
