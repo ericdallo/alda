@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/musica/go-osc"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/musica/go-osc"
 )
 
 var port int
@@ -16,17 +17,7 @@ func bundle(time time.Time) *osc.Bundle {
 }
 
 func message(address string) *osc.Message {
-	msg := osc.NewMessage()
-	msg.SetAddress(address)
-	return msg
-}
-
-func intArg(n int) *osc.Argument {
-	return osc.NewArgument().SetInt32(int32(n))
-}
-
-func stringArg(s string) *osc.Argument {
-	return osc.NewArgument().SetString(s)
+	return osc.NewMessage().SetAddress(address)
 }
 
 func systemPlayMsg() *osc.Message {
@@ -38,54 +29,67 @@ func systemStopMsg() *osc.Message {
 }
 
 func midiPatchMsg(track int, offset int, patch int) *osc.Message {
+	args := osc.NewArguments()
+	args.AddInt32(int32(offset))
+	args.AddInt32(int32(patch))
+
 	return message(
 		fmt.Sprintf("/track/%d/midi/patch", track),
-	).AddArguments(
-		intArg(offset), intArg(patch),
-	)
+	).SetArguments(args)
 }
 
 func midiPercussionMsg(track int) *osc.Message {
-	return message(fmt.Sprintf("/track/%d/midi/percussion", track)).AddArguments(
-		intArg(0),
-	)
+	args := osc.NewArguments()
+	args.AddInt32(int32(0))
+
+	return message(
+		fmt.Sprintf("/track/%d/midi/percussion", track),
+	).SetArguments(args)
 }
 
-func midiNoteMsg(
-	track int, offset int, note int, duration int, audibleDuration int,
-	velocity int) *osc.Message {
+func midiNoteMsg(track int, offset int, note int, duration int, audibleDuration int, velocity int) *osc.Message {
+	args := osc.NewArguments()
+	args.AddInt32(int32(offset))
+	args.AddInt32(int32(note))
+	args.AddInt32(int32(duration))
+	args.AddInt32(int32(audibleDuration))
+	args.AddInt32(int32(velocity))
+
 	return message(
 		fmt.Sprintf("/track/%d/midi/note", track),
-	).AddArguments(
-		intArg(offset),
-		intArg(note),
-		intArg(duration),
-		intArg(audibleDuration),
-		intArg(velocity))
+	).SetArguments(args)
 }
 
 func patternMsg(track int, offset int, pattern string, times int) *osc.Message {
-	return message(fmt.Sprintf("/track/%d/pattern", track)).AddArguments(
-		intArg(offset),
-		stringArg(pattern),
-		intArg(times),
-	)
+	args := osc.NewArguments()
+	args.AddInt32(int32(offset))
+	args.AddString(pattern)
+	args.AddInt32(int32(times))
+
+	return message(
+		fmt.Sprintf("/track/%d/pattern", track),
+	).SetArguments(args)
 }
 
 func patternMidiNoteMsg(
 	pattern string, offset int, note int, duration int, audibleDuration int,
 	velocity int) *osc.Message {
-	return message(fmt.Sprintf("/pattern/%s/midi/note", pattern)).AddArguments(
-		intArg(offset),
-		intArg(note),
-		intArg(duration),
-		intArg(audibleDuration),
-		intArg(velocity),
-	)
+	args := osc.NewArguments()
+	args.AddInt32(int32(offset))
+	args.AddInt32(int32(note))
+	args.AddInt32(int32(duration))
+	args.AddInt32(int32(audibleDuration))
+	args.AddInt32(int32(velocity))
+
+	return message(
+		fmt.Sprintf("/pattern/%s/midi/note", pattern),
+	).SetArguments(args)
 }
 
 func patternClearMsg(pattern string) *osc.Message {
-	return message(fmt.Sprintf("/pattern/%s/clear", pattern))
+	return message(
+		fmt.Sprintf("/pattern/%s/clear", pattern),
+	)
 }
 
 func oneNote() *osc.Bundle {
